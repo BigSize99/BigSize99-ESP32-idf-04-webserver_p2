@@ -1,0 +1,217 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>ESP32_IDF_TCT DASHBOARD</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
+        integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+    <link rel="icon" href="data:,">
+    <style>
+        html {
+            font-family: Arial;
+            display: inline-block;
+            text-align: center;
+        }
+
+        p {
+            font-size: 1.2rem;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        .topnav {
+            overflow: hidden;
+            background-color: #2f4468;
+            color: white;
+            font-size: 1.7rem;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .card {
+            background-color: white;
+            box-shadow: 2px 2px 12px 1px rgba(140, 140, 140, .5);
+        }
+
+        .cards {
+            max-width: 700px;
+            margin: 0 auto;
+            display: grid;
+            grid-gap: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .reading {
+            font-size: 2.8rem;
+        }
+
+        .packet {
+            color: #bebebe;
+        }
+
+        .card.temperature {
+            color: #fd7e14;
+        }
+
+        .card.humidity {
+            color: #1b78e2;
+        }
+/* 
+        ======================================== */
+        .switch {
+			position: relative;
+			display: inline-block;
+			width: 60px;
+			height: 34px;
+		}
+		
+		.switch input { 
+			opacity: 0;
+			width: 0;
+			height: 0;
+		}
+		
+		.slider {
+			position: absolute;
+			cursor: pointer;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: #ccc;
+			-webkit-transition: .4s;
+			transition: .4s;
+			border-radius: 34px;
+		}
+		
+		.slider:before {
+			position: absolute;
+			content: "";
+			height: 26px;
+			width: 26px;
+			left: 4px;
+			bottom: 4px;
+			background-color: white;
+			-webkit-transition: .4s;
+			transition: .4s;
+			border-radius: 50%;
+		}
+		
+		input:checked + .slider {
+			background-color: #2196F3;
+		}
+		
+		input:focus + .slider {
+			box-shadow: 0 0 1px #2196F3;
+		}
+		
+		input:checked + .slider:before {
+			-webkit-transform: translateX(26px);
+			-ms-transform: translateX(26px);
+			transform: translateX(26px);
+		}
+
+    </style>
+</head>
+
+<body>
+    <div class="topnav">
+        <h3>ESP32_IDF_TCT DASHBOARD</h3>
+    </div>
+    <div class="content">
+        <div class="cards">
+            <div class="card temperature">
+                <h4><i class="fas fa-thermometer-half"></i> BOARD #1 - TEMPERATURE</h4>
+                <p><span class="reading"><span id="t1"></span> &deg;C</span></p>
+                <p class="packet">Reading ID: <span id="rt1"></span></p>
+            </div>
+            <div class="card humidity">
+                <h4><i class="fas fa-tint"></i> BOARD #1 - HUMIDITY</h4>
+                <p><span class="reading"><span id="h1"></span> &percnt;</span></p>
+                <p class="packet">Reading ID: <span id="rh1"></span></p>
+            </div>
+            <div class="card temperature">
+                <h4><i class="fas fa-thermometer-half"></i> BOARD #2 - TEMPERATURE</h4>
+                <p><span class="reading"><span id="t2"></span> &deg;C</span></p>
+                <p class="packet">Reading ID: <span id="rt2"></span></p>
+            </div>
+            <div class="card humidity">
+                <h4><i class="fas fa-tint"></i> BOARD #2 - HUMIDITY</h4>
+                <p><span class="reading"><span id="h2"></span> &percnt;</span></p>
+                <p class="packet">Reading ID: <span id="rh2"></span></p>
+            </div>
+        </div>
+    </div>
+    <div>
+        <h2> CONTROL DEVICE</h2>
+        <label class="switch" id = "switch1" >
+            <input type="checkbox" checked id = "myCheck1" onclick = "myFunction1()">
+            <span class="slider"></span>
+        </label>
+    </div>
+    <script>
+        // if (!!window.EventSource) {
+        //     var source = new EventSource('/events');
+
+        //     source.addEventListener('open', function (e) {
+        //         console.log("Events Connected");
+        //     }, false);
+        //     source.addEventListener('error', function (e) {
+        //         if (e.target.readyState != EventSource.OPEN) {
+        //             console.log("Events Disconnected");
+        //         }
+        //     }, false);
+
+        //     source.addEventListener('message', function (e) {
+        //         console.log("message", e.data);
+        //     }, false);
+
+        //     source.addEventListener('new_readings', function (e) {
+        //         console.log("new_readings", e.data);
+        //         var obj = JSON.parse(e.data);
+        //         document.getElementById("t" + obj.id).innerHTML = obj.temperature.toFixed(2);
+        //         document.getElementById("h" + obj.id).innerHTML = obj.humidity.toFixed(2);
+        //         document.getElementById("rt" + obj.id).innerHTML = obj.readingId;
+        //         document.getElementById("rh" + obj.id).innerHTML = obj.readingId;
+        //     }, false);
+        // }
+        // set interval 1s gửi request 1 lần để lấy dữ liệu 
+        // Cái này là ta đang viết cho con clience nó hoạt động chứ không phải cho esp32. Nó tự request (GET) để lấy dữ liệu từ server
+        var xhttp1 = new XMLHttpRequest();  // Kỹ thuật ajax ( chỉ load lại phần thay đổi, k load lại cả trang web)
+        
+        // ĐOẠN NÀY LÀ XỬ LÝ DỮ LIỆU NHẬN ĐƯỢC
+        xhttp1.onreadystatechange = function() {
+            const obj = JSON.parse(this.responseText);              // Giải mã đoạn JSON ra
+            var element1 = document.getElementById('t1');           // GET cái ID text của bảng temperature
+            element1.innerText = obj.temperature;                   // Đưa vào ID trong bảng humidity
+            var element2 = document.getElementById('h1');           // GET cái ID text của humidity
+            element2.innerText = obj.humidity;                      // Đưa vào ID trong bảng humidity
+        }   
+
+
+        function myFunction1(){
+            var checkBox = document.getElementById("myCheck1");
+            if(checkBox.checked == true)
+            {
+                xhttp1.open("POST","/switch1",true);
+                xhttp1.send("1\n");
+            }else{
+                xhttp1.open("POST","/switch1",true);
+                xhttp1.send("0\n");
+            }
+        }
+
+
+        setInterval(function(){
+            xhttp1.open("GET","/getDATA", true);
+            xhttp1.send();
+        }, 1000);
+    </script>
+</body>
+
+</html>

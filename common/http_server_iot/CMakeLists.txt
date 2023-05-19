@@ -1,0 +1,5 @@
+set(app_src http_server_iot.c)
+set(pri_reg esp_http_server)
+idf_component_register(SRCS ${app_src}
+                    INCLUDE_DIRS "."
+                    REQUIRES ${pri_reg})
