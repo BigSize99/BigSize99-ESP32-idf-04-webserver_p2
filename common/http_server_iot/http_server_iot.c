@@ -23,7 +23,7 @@ static httpd_handle_t server = NULL;
 
 static http_post_callback_t http_post_switch_callback = NULL;
 static http_get_callback_t http_get_dht11_callback = NULL;
-
+static http_post_callback_t http_post_slider_callback = NULL;
 // extern const uint8_t index_html_start[] asm("_binary_ronaldo_jpg_start"); // Anh coi nhu gio se thanh mot cai chuoi
 // extern const uint8_t index_html_end[] asm("_binary_ronaldo_jpg_end");
 extern const uint8_t index_html_start[] asm("_binary_index_html_start"); // Anh coi nhu gio se thanh mot cai chuoi
@@ -58,28 +58,7 @@ static esp_err_t hello_get_handler2(httpd_req_t *req)
 {
     // const char* resp_str = (const char*) "{\"temperature\" : \"25.10\", \"humidity\" : \"10.25\"}"; // Gửi chuỗi JSON: KEY : value
     // const char* resp_str = (const char*)DHT11_read().temperature;
-    http_get_dht11_callback();
-
-    // // Lấy dữ liệu nhiệt độ và độ ẩm từ cảm biến DHT11
-    // float T = DHT11_read().temperature;
-    // float H = DHT11_read().humidity;
-    // T = esp_random() % 50;
-    // H = esp_random() % 100;
-
-    // // Tạo đối tượng JSON
-    // cJSON *root = cJSON_CreateObject();
-
-    // // Thêm trường dữ liệu nhiệt độ và độ ẩm vào đối tượng JSON
-    // // Thêm trường dữ liệu nhiệt độ và độ ẩm vào đối tượng JSON
-    // cJSON_AddNumberToObject(root, "temperature", T);
-    // cJSON_AddNumberToObject(root, "humidity", H);
-
-    // // Chuyển đổi đối tượng JSON thành chuỗi JSON
-    // const char * resp_str = cJSON_Print(root);
-
-    // // Gửi phản hồi HTTP chứa chuỗi JSON
-    // httpd_resp_set_type(req, "application/json");
-    // httpd_resp_send(req, resp_str, strlen(resp_str)); 
+    http_get_dht11_callback(req);
     return ESP_OK;
 }
 
@@ -142,6 +121,29 @@ static const httpd_uri_t post_state_Switch = {
     .handler   = data_post_handler2,
     .user_ctx  = NULL
 };
+
+
+// =================================================POST slider=========================================================================
+
+static esp_err_t data_post_handler3(httpd_req_t *req)    // Struct truyền tới nó đã có cả data và len_data
+{
+                                 // Tạo buffer chứa dữ liệu truyền tới
+    /* Read the data for the request */
+    char buf3[100];     
+    httpd_req_recv(req, buf3, req->content_len);         // Hàm nhận dữ liệu các tham số truyền vào" 1 là reqq; 2 là buffer để đọc ra, 3 là data đọc ra   
+    http_post_slider_callback(buf3, req->content_len);
+    httpd_resp_send_chunk(req, NULL, 0);
+    return ESP_OK;
+}
+
+static const httpd_uri_t post_state_Slider = {
+    .uri       = "/Slider",
+    .method    = HTTP_POST,
+    .handler   = data_post_handler3,
+    .user_ctx  = NULL
+};
+
+
 /* This handler allows the custom error handling functionality to be
  * tested from client side. For that, when a PUT request 0 is sent to
  * URI /ctrl, the /hello and /echo URIs are unregistered and following
@@ -187,6 +189,7 @@ void start_webserver(void)
         httpd_register_uri_handler(server, &get_data_dht11);      // clience sẽ GET/POST data vào các resource này
         httpd_register_uri_handler(server, &post_data_dht11);      // clience sẽ GET/POST data vào các resource này 
         httpd_register_uri_handler(server, &post_state_Switch); 
+        httpd_register_uri_handler(server, &post_state_Slider);
         httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, http_404_error_handler);
         // httpd_register_uri_handler(server, &echo);       // request đúng resource sẽ trả về đc dữ liệu
     }else{
@@ -210,3 +213,7 @@ void http_set_callback_dht11(void *cb)
     http_get_dht11_callback = cb;
 }
 
+void http_set_callback_slider(void *cb)
+{
+    http_post_slider_callback = cb;
+}

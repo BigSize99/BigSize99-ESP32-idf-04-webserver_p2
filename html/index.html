@@ -1,3 +1,4 @@
+
 <!DOCTYPE HTML>
 <html>
 
@@ -6,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
         integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+    <link rel="icon" href="data:,">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.0.4/jscolor.min.js"></script>
     <link rel="icon" href="data:,">
     <style>
         html {
@@ -118,8 +121,8 @@
 
     </style>
 </head>
-
-<body>
+<div>
+<div>
     <div class="topnav">
         <h3>ESP32_IDF_TCT DASHBOARD</h3>
     </div>
@@ -148,12 +151,32 @@
         </div>
     </div>
     <div>
+
+        <h1>Custom Range Slider</h1>
+
+        <div class="slidecontainer">
+          <p>Default range slider:</p>
+          <input type="range" min="1" max="100" value="50"  id="myRange">
+          <p>Value: <span id="demo"></span></p>
+        </div>
+
+    </div>
+    <div>
         <h2> CONTROL DEVICE</h2>
         <label class="switch" id = "switch1" >
             <input type="checkbox" checked id = "myCheck1" onclick = "myFunction1()">
             <span class="slider"></span>
         </label>
     </div>
+        <div class="container">
+      <div class="row">
+        <h1>COLOR ESP_IOT</h1>
+      </div>
+      <a class="btn btn-primary btn-lg" href="#" id="change_color" role="button">Change Color</a> 
+      <input class="jscolor {onFineChange:'update(this)'}" id="rgb">
+    </div>
+</div>
+
     <script>
         // if (!!window.EventSource) {
         //     var source = new EventSource('/events');
@@ -206,11 +229,26 @@
             }
         }
 
+        var slider = document.getElementById("myRange");
+        var output = document.getElementById("demo");
+        output.innerHTML = slider.value;
 
+        slider.oninput = function() {
+        output.innerHTML = this.value;
+        xhttp1.open("POST","/Slider",true);
+        xhttp1.send(output.innerHTML);
+        }
+        
+        function update(picker) {
+        document.getElementById('rgb').innerHTML = Math.round(picker.rgb[0]) + ', ' +  Math.round(picker.rgb[1]) + ', ' + Math.round(picker.rgb[2]);
+        document.getElementById("change_color").href = "?r=" + Math.round(picker.rgb[0]) + "g" +  Math.round(picker.rgb[1]) + "b" + Math.round(picker.rgb[2]) + "&";
+      }
+        
         setInterval(function(){
             xhttp1.open("GET","/getDATA", true);
             xhttp1.send();
         }, 1000);
+
     </script>
 </body>
 

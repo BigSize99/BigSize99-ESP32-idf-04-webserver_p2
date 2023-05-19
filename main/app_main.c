@@ -23,14 +23,15 @@
 #include "dht11_iot.h"
 #include "cJSON.h"
 #include <esp_http_server.h>
+#include <ledc_iot.h>
 
 /* The examples use WiFi configuration that you can set via project configuration menu
 
    If you'd rather not, just change the below entries to strings with
    the config you want - ie #define EXAMPLE_WIFI_SSID "mywifissid"
 */
-#define EXAMPLE_ESP_WIFI_SSID      ".GUTA CAFE"
-#define EXAMPLE_ESP_WIFI_PASS      "gutacafe"
+#define EXAMPLE_ESP_WIFI_SSID      "JIMMY"
+#define EXAMPLE_ESP_WIFI_PASS      "binh1996"
 #define EXAMPLE_ESP_MAXIMUM_RETRY  5
 
 /* FreeRTOS event group to signal when we are connected*/
@@ -136,37 +137,48 @@ void switch_data_callback(char *data, int len)
         output_io_set_level(2,0);
 }
 
-void dht11_data_callback(char *data, int len)
+void slider_data_callback(char *data, int len)
 {
-    // // Lấy dữ liệu nhiệt độ và độ ẩm từ cảm biến DHT11
-    // float T = DHT11_read().temperature;
-    // float H = DHT11_read().humidity;
-    // T = esp_random() % 50;
-    // H = esp_random() % 100;
+    char num_to_str[100]; 
+    memcpy(num_to_str, data, len + 1); // sao chep tu vung nho nguon den vung nho dich, "le +1" bao dam co ki tu \n
+    int duty = atoi(num_to_str);
+    printf("DATA: %d\n", duty);  
+    ledc_app_set_duty(0, duty);
+}
 
-    // // Tạo đối tượng JSON
-    // cJSON *root = cJSON_CreateObject();
+void dht11_data_callback(httpd_req_t *req)
+{
+    // Lấy dữ liệu nhiệt độ và độ ẩm từ cảm biến DHT11
+    float T = DHT11_read().temperature;
+    float H = DHT11_read().humidity;
+    T = esp_random() % 50;
+    H = esp_random() % 100;
 
-    // // Thêm trường dữ liệu nhiệt độ và độ ẩm vào đối tượng JSON
-    // // Thêm trường dữ liệu nhiệt độ và độ ẩm vào đối tượng JSON
-    // cJSON_AddNumberToObject(root, "temperature", T);
-    // cJSON_AddNumberToObject(root, "humidity", H);
+    // Tạo đối tượng JSON
+    cJSON *root = cJSON_CreateObject();
 
-    // // Chuyển đổi đối tượng JSON thành chuỗi JSON
-    // const char * resp_str = cJSON_Print(root);
+    // Thêm trường dữ liệu nhiệt độ và độ ẩm vào đối tượng JSON
+    // Thêm trường dữ liệu nhiệt độ và độ ẩm vào đối tượng JSON
+    cJSON_AddNumberToObject(root, "temperature", T);
+    cJSON_AddNumberToObject(root, "humidity", H);
 
+    // Chuyển đổi đối tượng JSON thành chuỗi JSON
+    const char * resp_str = cJSON_Print(root);
     // // Gửi phản hồi HTTP chứa chuỗi JSON
-    // httpd_resp_set_type(req, "application/json");
-    // httpd_resp_send(req, resp_str, strlen(resp_str)); 
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, resp_str, strlen(resp_str)); 
 }
 
 
 void app_main(void)
 {
     DHT11_init(GPIO_NUM_4);
-    output_io_create(2);
+    ledc_init();
+    ledc_add_pin(2, 0);
+    // output_io_create(2);
     http_set_callback_switch(switch_data_callback);
     http_set_callback_dht11(dht11_data_callback);
+    http_set_callback_slider(slider_data_callback);
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
